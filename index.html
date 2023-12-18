@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tính Điểm GPA</title>
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Helvetica";
+        padding: 20px;
+        background-color: #a52a2a;
+      }
+      .container {
+        background-color: rgba(255, 255, 255);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Tính Điểm GPA</h2>
+      <form id="gpaForm">
+        <div class="form-group">
+          <label for="tenMonHoc">Tên Môn Học</label>
+          <input
+            type="text"
+            class="form-control"
+            id="tenMonHoc"
+            placeholder="Nhập tên môn học"
+          />
+        </div>
+        <div class="form-group">
+          <label for="soTinChi">Số Tín Chỉ</label>
+          <input
+            type="text"
+            class="form-control"
+            id="soTinChi"
+            placeholder="Nhập số tín chỉ"
+          />
+        </div>
+        <div class="form-group">
+          <label for="diem">Điểm</label>
+          <input
+            type="text"
+            class="form-control"
+            id="diem"
+            placeholder="Nhập điểm"
+          />
+        </div>
+        <button type="button" class="btn btn-primary" onclick="themMonHoc()">
+          Thêm Môn Học
+        </button>
+        <button type="button" class="btn btn-danger" onclick="xoaTatCaMonHoc()">
+          Xoá Tất Cả Môn Học
+        </button>
+      </form>
+
+      <div class="mt-4">
+        <h4>Kết Quả:</h4>
+        <h4 id="ketQuaGPA"></h4>
+        <div class="table-responsive"></div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col" class="col-2">Tên Môn Học</th>
+              <th scope="col" class="col-1">Số Tín Chỉ</th>
+              <th scope="col" class="col-1">Điểm</th>
+              <th scope="col" class="col-8">Hành Động</th>
+            </tr>
+          </thead>
+          <tbody id="resultTableBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="chinhSuaMonHocModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="chinhSuaMonHocModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="chinhSuaMonHocModalLabel">
+              Chỉnh Sửa Môn Học
+            </h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="chinhSuaMonHocForm">
+              <div class="form-group">
+                <label for="tenMonHocChinhSua">Tên Môn Học</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="tenMonHocChinhSua"
+                  placeholder="Nhập tên môn học"
+                />
+              </div>
+              <div class="form-group">
+                <label for="soTinChiChinhSua">Số Tín Chỉ</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="soTinChiChinhSua"
+                  placeholder="Nhập số tín chỉ"
+                />
+              </div>
+              <div class="form-group">
+                <label for="diemChinhSua">Điểm</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="diemChinhSua"
+                  placeholder="Nhập điểm"
+                />
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="luuChinhSuaMonHoc()"
+              >
+                Lưu Chỉnh Sửa
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.7.4/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.7.4/firebase-database.js"></script>
+
+    <script>
+      // Initialize Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyAhdAogOE-PxTxM8b7zw8BsWVZD1-_qNOY",
+        authDomain: "tinh-gpa-ddeb3.firebaseapp.com",
+        databaseURL: "https://tinh-gpa-ddeb3-default-rtdb.firebaseio.com",
+        projectId: "tinh-gpa-ddeb3",
+        storageBucket: "tinh-gpa-ddeb3.appspot.com",
+        messagingSenderId: "537330464326",
+        appId: "1:537330464326:web:0afe40ed6772f388c4bc47",
+      };
+      firebase.initializeApp(firebaseConfig);
+
+      var database = firebase.database();
+      var danhSachMonHocRef = database.ref("danhSachMonHoc");
+
+      var danhSachMonHoc = [];
+      var indexMonHocDangChinhSua = -1;
+
+      danhSachMonHocRef.on("value", function (snapshot) {
+        danhSachMonHoc = snapshot.val() || [];
+        capNhatDanhSachMonHoc();
+      });
+
+      function themMonHoc() {
+        // ... (giữ nguyên phần JavaScript của hàm themMonHoc) ...
+
+        // Sau khi thêm môn học, cập nhật dữ liệu lên Firebase Realtime Database
+        var tenMonHoc = document.getElementById("tenMonHoc").value;
+        var soTinChi = document.getElementById("soTinChi").value;
+        var diem = document.getElementById("diem").value;
+
+        if (!tenMonHoc || !soTinChi || !diem) {
+          alert(
+            "Vui lòng nhập đầy đủ thông tin tên môn học, số tín chỉ, và điểm."
+          );
+          return;
+        }
+
+        if (
+          danhSachMonHoc.some(function (monHoc) {
+            return monHoc.tenMonHoc.toLowerCase() === tenMonHoc.toLowerCase();
+          })
+        ) {
+          alert("Tên môn học đã tồn tại. Vui lòng chọn tên khác.");
+          return;
+        }
+
+        if (isNaN(soTinChi) || isNaN(diem)) {
+          alert("Số tín chỉ và điểm phải là số.");
+          return;
+        }
+
+        danhSachMonHoc.push({
+          tenMonHoc: tenMonHoc,
+          soTinChi: soTinChi,
+          diem: diem,
+        });
+        capNhatDanhSachMonHoc();
+        danhSachMonHocRef.set(danhSachMonHoc);
+      }
+
+      function xoaTatCaMonHoc() {
+        // ... (giữ nguyên phần JavaScript của hàm xoaTatCaMonHoc) ...
+
+        // Sau khi xoá tất cả môn học, cập nhật dữ liệu lên Firebase Realtime Database
+        var confirmDelete = confirm("Bạn có chắc muốn tất cả môn học?");
+        if (confirmDelete) {
+          danhSachMonHoc = [];
+          capNhatDanhSachMonHoc();
+        }
+        danhSachMonHocRef.set(danhSachMonHoc);
+      }
+
+      function capNhatDanhSachMonHoc() {
+        // ... (giữ nguyên phần JavaScript của hàm capNhatDanhSachMonHoc) ...
+        var tbody = document.getElementById("resultTableBody");
+        var ketQuaGPA = document.getElementById("ketQuaGPA");
+
+        tbody.innerHTML = "";
+        ketQuaGPA.innerHTML = "";
+
+        if (danhSachMonHoc.length > 0) {
+          for (var i = 0; i < danhSachMonHoc.length; i++) {
+            var dong = document.createElement("tr");
+
+            var tenMonHocCell = document.createElement("td");
+            tenMonHocCell.textContent = danhSachMonHoc[i].tenMonHoc;
+            dong.appendChild(tenMonHocCell);
+
+            var soTinChiCell = document.createElement("td");
+            soTinChiCell.textContent = danhSachMonHoc[i].soTinChi;
+            dong.appendChild(soTinChiCell);
+
+            var diemCell = document.createElement("td");
+            diemCell.textContent = danhSachMonHoc[i].diem;
+            dong.appendChild(diemCell);
+
+            var hanhDongCell = document.createElement("td");
+
+            var nutXoa = document.createElement("button");
+            nutXoa.textContent = "Xoá";
+            nutXoa.className = "btn btn-danger btn-sm";
+            (function (index) {
+              nutXoa.onclick = function () {
+                xoaMonHocTheoIndex(index);
+              };
+            })(i);
+            hanhDongCell.appendChild(nutXoa);
+
+            var nutChinhSua = document.createElement("button");
+            nutChinhSua.textContent = "Chỉnh Sửa";
+            nutChinhSua.className = "btn btn-warning btn-sm ml-1";
+            (function (index) {
+              nutChinhSua.onclick = function () {
+                hienThiModalChinhSua(index);
+              };
+            })(i);
+            hanhDongCell.appendChild(nutChinhSua);
+
+            dong.appendChild(hanhDongCell);
+
+            tbody.appendChild(dong);
+          }
+
+          var tongSoTinChi = danhSachMonHoc.reduce(function (acc, monHoc) {
+            return acc + parseFloat(monHoc.soTinChi);
+          }, 0);
+
+          var tongDiemTinChi = danhSachMonHoc.reduce(function (acc, monHoc) {
+            return acc + parseFloat(monHoc.soTinChi) * parseFloat(monHoc.diem);
+          }, 0);
+
+          var gpa = tongDiemTinChi / tongSoTinChi;
+          ketQuaGPA.textContent = "GPA: " + gpa.toFixed(2);
+        }
+      }
+
+      // Các hàm khác giữ nguyên nội dung không thay đổi.
+      function xoaMonHocTheoIndex(index) {
+        if (index >= 0 && index < danhSachMonHoc.length) {
+          var confirmDelete = confirm("Bạn có chắc muốn xoá môn học này?");
+          if (confirmDelete) {
+            danhSachMonHoc.splice(index, 1);
+            capNhatDanhSachMonHoc();
+          }
+        }
+        danhSachMonHocRef.set(danhSachMonHoc);
+      }
+
+      function hienThiModalChinhSua(index) {
+        indexMonHocDangChinhSua = index;
+
+        var monHoc = danhSachMonHoc[index];
+        document.getElementById("tenMonHocChinhSua").value = monHoc.tenMonHoc;
+        document.getElementById("soTinChiChinhSua").value = monHoc.soTinChi;
+        document.getElementById("diemChinhSua").value = monHoc.diem;
+
+        $("#chinhSuaMonHocModal").modal("show");
+      }
+
+      function luuChinhSuaMonHoc() {
+        var index = indexMonHocDangChinhSua;
+
+        if (index >= 0 && index < danhSachMonHoc.length) {
+          var tenMonHocMoi = document.getElementById("tenMonHocChinhSua").value;
+          var soTinChiMoi = document.getElementById("soTinChiChinhSua").value;
+          var diemMoi = document.getElementById("diemChinhSua").value;
+
+          if (
+            tenMonHocMoi.toLowerCase() !==
+              danhSachMonHoc[index].tenMonHoc.toLowerCase() &&
+            danhSachMonHoc.some(function (monHoc) {
+              return (
+                monHoc.tenMonHoc.toLowerCase() === tenMonHocMoi.toLowerCase()
+              );
+            })
+          ) {
+            alert("Tên môn học đã tồn tại. Vui lòng chọn tên khác.");
+            return;
+          }
+
+          if (isNaN(soTinChiMoi) || isNaN(diemMoi)) {
+            alert("Số tín chỉ và điểm phải là số.");
+            return;
+          }
+
+          danhSachMonHoc[index] = {
+            tenMonHoc: tenMonHocMoi,
+            soTinChi: soTinChiMoi,
+            diem: diemMoi,
+          };
+          capNhatDanhSachMonHoc();
+          danhSachMonHocRef.set(danhSachMonHoc);
+
+          $("#chinhSuaMonHocModal").modal("hide");
+        }
+      }
+    </script>
+  </body>
+</html>
